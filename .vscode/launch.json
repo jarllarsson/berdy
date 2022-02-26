@@ -1,0 +1,65 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "LLDB Debug 'berdy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=berdy",
+                    "--package=berdy"
+                ],
+                "filter": {
+                    "name": "berdy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+             // Needed for asset server to find assets, points CARGO_MANIFEST_DIR to workspace where assets are.
+            // Not needed if we do cargo run as then the cargo dir is the same as workspace dir.
+            "env" : { "CARGO_MANIFEST_DIR" : "${workspaceFolder}" }
+        },
+        {
+            "name": "Windows Exe Launch 'berdy'",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/target/debug/berdy.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            // Needed for asset server to find assets, points CARGO_MANIFEST_DIR to workspace where assets are.
+            // Not needed if we do cargo run as then the cargo dir is the same as workspace dir.
+            "env" : { "CARGO_MANIFEST_DIR" : "${workspaceFolder}" }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Unit Tests 'berdy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=berdy",
+                    "--package=berdy"
+                ],
+                "filter": {
+                    "name": "berdy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            // Needed for asset server to find assets, points CARGO_MANIFEST_DIR to workspace where assets are.
+            // Not needed if we do cargo run as then the cargo dir is the same as workspace dir.
+            "env" : { "CARGO_MANIFEST_DIR" : "${workspaceFolder}" }
+        }
+    ]
+}
