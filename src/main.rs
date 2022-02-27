@@ -1,10 +1,12 @@
 mod player;
 mod enemy;
+mod level;
 
 use std::f32::consts::PI;
 use bevy::prelude::*;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
+use level::LevelPlugin;
 use std::path::Path;
 use bevy::render::texture::ImageType;
 
@@ -12,6 +14,7 @@ const SPRITE_DIR: &str = "assets";
 const PLAYER_SPRITE: &str = "test.png";
 const BULLET_SPRITE: &str = "test.png";
 const ENEMY_SPRITE: &str = "test.png";
+const LEVEL_SPRITE: &str = "level_test.png";
 const TIME_STEP: f32 = 1. / 60.;
 
 const TO_DEG: f32 = 180. / PI;
@@ -27,6 +30,7 @@ pub struct SpriteImages {
     player: (Handle<Image>, Vec2),
     bullet: (Handle<Image>, Vec2),
     enemy:  (Handle<Image>, Vec2),
+    level:  (Handle<Image>, Vec2),
 }
 struct WinSize {
     w: f32,
@@ -37,12 +41,19 @@ struct ActiveEnemies(u32);
 // Components 
 #[derive(Component)]
 struct Player;
+
 #[derive(Component)]
 struct PlayerReadyFire(bool);
+
 #[derive(Component)]
 struct Bullet;
+
 #[derive(Component)]
 struct Enemy;
+
+#[derive(Component)]
+struct Level;
+
 #[derive(Component)]
 struct Speed(f32);
 impl Default for Speed
@@ -66,6 +77,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)
+        .add_plugin(LevelPlugin)
         .add_startup_system(setup.system())
         .run();
 }
@@ -88,6 +100,7 @@ fn setup(
         player: load_image(&mut images, PLAYER_SPRITE),
         bullet: load_image(&mut images, BULLET_SPRITE),
         enemy:  load_image(&mut images, ENEMY_SPRITE),
+        level:  load_image(&mut images, LEVEL_SPRITE),
     });
 
     // Misc resources
