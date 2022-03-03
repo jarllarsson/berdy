@@ -1,6 +1,7 @@
 mod player;
 mod enemy;
 mod level;
+mod image_helper;
 
 use std::f32::consts::PI;
 use bevy::prelude::*;

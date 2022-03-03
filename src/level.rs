@@ -13,7 +13,7 @@ impl Plugin for LevelPlugin{
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(0.2))
                 .with_system(level_destroy)
-        );;
+        );
     }
 }
 
@@ -28,7 +28,7 @@ fn level_spawn(
     commands.spawn_bundle(SpriteBundle {
         texture: sprite_images.level.0.clone(),
         transform: Transform {
-            translation: Vec3::new(0., 0., 100.),
+            translation: Vec3::new(0., 0., 0.),
             scale: Vec3::new(3., 3., 1.0),
             ..Default::default()
         },

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{SpriteImages, WinSize, Player, Speed, PlayerReadyFire, TIME_STEP, Bullet, TO_RAD};
+use crate::{SpriteImages, WinSize, Player, Speed, PlayerReadyFire, TIME_STEP, Bullet, TO_RAD, Level, image_helper::*};
 
 pub struct PlayerPlugin;
 
@@ -10,7 +10,8 @@ impl Plugin for PlayerPlugin{
             SystemStage::single(player_spawn))
         .add_system(player_movement)
         .add_system(player_fire)
-        .add_system(bullet_movement);
+        .add_system(bullet_movement)
+        .add_system(player_level_collide);
     }
 }
 
@@ -25,7 +26,7 @@ fn player_spawn(
     commands.spawn_bundle(SpriteBundle {
         texture: sprite_images.player.0.clone(),
         transform: Transform {
-            translation: Vec3::new(0., bottom + 67. / 4. + 5., 10.),
+            translation: Vec3::new(0., bottom + 400., 10.),
             scale: Vec3::new(0.5, 0.5, 1.0),
             ..Default::default()
         },
@@ -51,16 +52,63 @@ fn player_movement(
             0.0
         };
 
-        let old_pos = transform.translation.x;
+        let old_pos = transform.translation;
         transform.translation.x += dir * speed.0 * TIME_STEP;
+        transform.translation.y -= 9.82 * TIME_STEP;
 
-        let pos = &mut transform.translation.x;
+        let pos = &mut transform.translation;
         let area = Vec3::new(win_size.w / 2., win_size.h / 2., 0.);
         
-        if *pos > area.x || *pos < -area.x
+        if pos.x > area.x || pos.x < -area.x
         {
-            *pos = old_pos;
+            pos.x = old_pos.x;
         }
+        if pos.y > area.y || pos.y < -area.y
+        {
+            pos.y = old_pos.y;
+        }
+    }
+}
+
+fn player_level_collide(
+    mut images: ResMut<Assets<Image>>,
+    mut player_query: Query<(&mut Transform, With<Player>), Without<Level>>,
+    level_query: Query<(&Handle<Image>, &Transform, With<Level>), Without<Player>>
+){
+    // Fetch player transform and image handle+transform of level
+    if let ( Ok((mut player_transform, _)), Ok((img_handle, level_transform, _)) ) = 
+           ( player_query.get_single_mut(), level_query.get_single()) {
+
+        let size = images.get(img_handle).unwrap().texture_descriptor.size;
+        let size = Vec2::new(size.width as f32, size.height as f32);
+        let player_wpos = player_transform.translation;
+        let to_level_pos = level_transform.compute_matrix().inverse();
+        let player_lpos = to_level_pos.transform_point3(player_wpos);
+        let player_ppos = UVec2::new((player_lpos.x + size.x * 0.5) as u32,(-player_lpos.y + size.y * 0.5) as u32);
+
+
+        if get_pixel(&player_ppos, images.get(img_handle).unwrap()).r() <= 0.0 {
+            set_pixel(&player_ppos, &Color::RED, images.get_mut(img_handle).unwrap());
+        }
+        else {
+            set_pixel(&player_ppos, &Color::BLUE, images.get_mut(img_handle).unwrap());
+        }
+        /*
+        transform.translation.x += dir * speed.0 * TIME_STEP;
+        transform.translation.y -= 9.82 * TIME_STEP;
+
+        let pos = &mut transform.translation;
+        let area = Vec3::new(win_size.w / 2., win_size.h / 2., 0.);
+        
+        if pos.x > area.x || pos.x < -area.x
+        {
+            pos.x = old_pos.x;
+        }
+        if pos.y > area.y || pos.y < -area.y
+        {
+            pos.y = old_pos.y;
+        }
+        */
     }
 }
 
