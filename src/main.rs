@@ -56,13 +56,23 @@ struct Enemy;
 struct Level;
 
 #[derive(Component)]
-struct Speed(f32);
+struct Speed(Vec2);
 impl Default for Speed
 {
     fn default() -> Self {
-        Self(500.)
+        Self(Vec2::new(0., 500.))
     }
 }
+
+#[derive(Component)]
+struct OldPos(Vec2);
+impl Default for OldPos
+{
+    fn default() -> Self {
+        Self(Vec2::new(0., 0.))
+    }
+}
+
 
 // App
 fn main() {

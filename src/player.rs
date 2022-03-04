@@ -1,5 +1,7 @@
-use bevy::prelude::*;
-use crate::{SpriteImages, WinSize, Player, Speed, PlayerReadyFire, TIME_STEP, Bullet, TO_RAD, Level, image_helper::*};
+use bevy::{prelude::*, math::Vec3Swizzles};
+use lerp::Lerp;
+use crate::{SpriteImages, WinSize, Player, Speed, PlayerReadyFire, TIME_STEP, Bullet, TO_RAD, Level, image_helper::*, OldPos};
+
 
 pub struct PlayerPlugin;
 
@@ -34,16 +36,17 @@ fn player_spawn(
     })
     // Custom components
     .insert(Player) // Unit struct to define player type
-    .insert(Speed::default())
+    .insert(Speed { 0: Vec2::new(0., 0.) })
+    .insert(OldPos::default())
     .insert(PlayerReadyFire(true));
 }
 
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     win_size: Res<WinSize>,
-    mut query: Query<(&Speed, &mut Transform, With<Player>)>
+    mut query: Query<(&mut Speed, &mut Transform, With<Player>)>
 ){
-    if let Ok((speed, mut transform, _)) = query.get_single_mut() {
+    if let Ok((mut speed, mut transform, _)) = query.get_single_mut() {
         let dir = if keyboard_input.pressed(KeyCode::Left) {
             -1.
         } else if keyboard_input.pressed(KeyCode::Right) {
@@ -53,8 +56,14 @@ fn player_movement(
         };
 
         let old_pos = transform.translation;
-        transform.translation.x += dir * speed.0 * TIME_STEP;
-        transform.translation.y -= 9.82 * TIME_STEP;
+        speed.0.x += 500.0 * dir * TIME_STEP;
+        speed.0.x =  speed.0.x.lerp(0., 1. - 0.5f32.powf(TIME_STEP));
+        if speed.0.x > 100. { speed.0.x = 100. };
+        if speed.0.x < -100. { speed.0.x = -100.};
+
+        transform.translation.x += speed.0.x * TIME_STEP;
+        speed.0.y -= 1000. * TIME_STEP;
+        transform.translation.y += speed.0.y * TIME_STEP;
 
         let pos = &mut transform.translation;
         let area = Vec3::new(win_size.w / 2., win_size.h / 2., 0.);
@@ -72,11 +81,11 @@ fn player_movement(
 
 fn player_level_collide(
     mut images: ResMut<Assets<Image>>,
-    mut player_query: Query<(&mut Transform, With<Player>), Without<Level>>,
+    mut player_query: Query<(&mut Transform, &mut Speed, &mut OldPos, With<Player>), Without<Level>>,
     level_query: Query<(&Handle<Image>, &Transform, With<Level>), Without<Player>>
 ){
     // Fetch player transform and image handle+transform of level
-    if let ( Ok((mut player_transform, _)), Ok((img_handle, level_transform, _)) ) = 
+    if let ( Ok((mut player_transform, mut speed, mut old_pos, _)), Ok((img_handle, level_transform, _)) ) = 
            ( player_query.get_single_mut(), level_query.get_single()) {
 
         let size = images.get(img_handle).unwrap().texture_descriptor.size;
@@ -85,13 +94,33 @@ fn player_level_collide(
         let to_level_pos = level_transform.compute_matrix().inverse();
         let player_lpos = to_level_pos.transform_point3(player_wpos);
         let player_ppos = UVec2::new((player_lpos.x + size.x * 0.5) as u32,(-player_lpos.y + size.y * 0.5) as u32);
+        let pixel_size = level_transform.scale;
+
+        let is_empty = |pixel: [u8;4]| {
+            pixel[0] as u16 + pixel[1] as u16 + pixel[2] as u16 != 255 * 3
+        };
+
+        // TODO Linecast from old_pos to current pos
 
         let pixel = get_pixel_u8(&player_ppos, images.get(img_handle).unwrap());
-        if pixel[0] as u16 + pixel[1] as u16 + pixel[2] as u16 != 255 * 3 {
+        if is_empty(pixel) {
+            // No hit
             set_pixel(&player_ppos, &Color::RED, images.get_mut(img_handle).unwrap());
+            old_pos.0 = player_wpos.xy();
         }
         else {
-            draw_filled_circle(&player_ppos, 5.,&Color::BLACK, images.get_mut(img_handle).unwrap());
+            // Level hit
+            // for y in 1..9 {
+            //     let new_pixel = get_pixel_u8(&(player_ppos - UVec2::new(0, y)), images.get(img_handle).unwrap());
+            //     if is_empty(new_pixel) {
+                    if speed.0.x.abs() > 0. { speed.0.x *= -1.; player_transform.translation.x = old_pos.0.x};
+                    if speed.0.y.abs() > 0. { speed.0.y *= -1.;  };
+                    // speed.0 = (player_wpos.xy() - old_pos.0);
+                    // player_transform.translation.x = old_pos.0.x;
+                    // player_transform.translation -= (player_wpos.xy() - old_pos.0) * TIME_STEP;
+            //    }
+            //}
+            // draw_filled_circle(&player_ppos, 5.,&Color::BLACK, images.get_mut(img_handle).unwrap());
         }
     }
 }
@@ -144,7 +173,7 @@ fn bullet_movement(
         let area = Vec3::new(win_size.w / 2., win_size.h / 2., 0.);
         
         let dir = Vec3::new(0., 1., 0.);
-        *pos += dir * speed.0 * TIME_STEP;
+        *pos += dir * speed.0.y * TIME_STEP;
 
         if pos.y > area.y || pos.y < -area.y || 
         pos.x > area.x || pos.x < -area.x
