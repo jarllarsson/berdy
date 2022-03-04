@@ -86,29 +86,13 @@ fn player_level_collide(
         let player_lpos = to_level_pos.transform_point3(player_wpos);
         let player_ppos = UVec2::new((player_lpos.x + size.x * 0.5) as u32,(-player_lpos.y + size.y * 0.5) as u32);
 
-
-        if get_pixel(&player_ppos, images.get(img_handle).unwrap()).r() <= 0.0 {
+        let pixel = get_pixel_u8(&player_ppos, images.get(img_handle).unwrap());
+        if pixel[0] as u16 + pixel[1] as u16 + pixel[2] as u16 != 255 * 3 {
             set_pixel(&player_ppos, &Color::RED, images.get_mut(img_handle).unwrap());
         }
         else {
-            set_pixel(&player_ppos, &Color::BLUE, images.get_mut(img_handle).unwrap());
+            draw_filled_circle(&player_ppos, 5.,&Color::BLACK, images.get_mut(img_handle).unwrap());
         }
-        /*
-        transform.translation.x += dir * speed.0 * TIME_STEP;
-        transform.translation.y -= 9.82 * TIME_STEP;
-
-        let pos = &mut transform.translation;
-        let area = Vec3::new(win_size.w / 2., win_size.h / 2., 0.);
-        
-        if pos.x > area.x || pos.x < -area.x
-        {
-            pos.x = old_pos.x;
-        }
-        if pos.y > area.y || pos.y < -area.y
-        {
-            pos.y = old_pos.y;
-        }
-        */
     }
 }
 
@@ -128,7 +112,7 @@ fn player_fire(
                 commands.spawn_bundle(SpriteBundle {
                     texture: sprite_images.bullet.0.clone(),
                     transform: Transform {
-                        translation: Vec3::new(pos.x + x_offset, pos.y + 5., 0.),
+                        translation: Vec3::new(pos.x + x_offset, pos.y + 5., 10.),
                         scale: Vec3::new(0.5, 0.5, 1.),
                         rotation: Quat::from_rotation_z(90. * TO_RAD),
                         ..Default::default()
